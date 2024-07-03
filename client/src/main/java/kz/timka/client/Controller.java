@@ -12,7 +12,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.URL;
-import java.util.List;
 import java.util.ResourceBundle;
 
 public class Controller implements Initializable{
@@ -37,6 +36,8 @@ public class Controller implements Initializable{
     private DataOutputStream out;
     private String username;
 
+    private ChatLocalHistory chatLocalHistory;
+
     public void setUsername(String username) {
         this.username = username;
         if(this.username == null) {
@@ -53,51 +54,27 @@ public class Controller implements Initializable{
             msgBox.setManaged(true);
             clientsList.setVisible(true);
             clientsList.setManaged(true);
+
+            ChatLocalHistory.loadMessages(this.username, msgArea);
         }
+
     }
 
     public void connect() {
         try {
             socket = new Socket("localhost", 8189);
-            in = new DataInputStream(socket.getInputStream());
             out = new DataOutputStream(socket.getOutputStream());
+            in = new DataInputStream(socket.getInputStream());
+            chatLocalHistory = new ChatLocalHistory();
+
             new Thread(() -> {
                 try {
-                    // цикл авторизации
                     while (true) {
                         String msg = in.readUTF();
-                        if(msg.startsWith("/login_ok ")) {
-                            // client -> server /login Bob
-                            // server -> client /login_ok Bob
-                            // server -> client /login_failed username already in use
-                            setUsername(msg.split("\\s+")[1]);
-                            break;
-                        }
-                        if(msg.startsWith("/login_failed ")) {
-                            String reason = msg.split("\\s+", 2)[1];
-                            msgArea.appendText(reason + "\n");
-                        }
-                        
+                        handleMessageFromServer(msg);
                     }
-
-                    // цикл общения
-                    while (true) {
-                        String msg = in.readUTF();
-                        if (msg.startsWith("/clients_list ")) {
-                            Platform.runLater(() -> {
-                                clientsList.getItems().clear();
-                                String[] tokens = msg.split("\\s+");
-                                for(int i=1; i < tokens.length; i++) {
-                                    clientsList.getItems().add(tokens[i]);
-                                }
-                            });
-                            continue;
-                        }
-                        msgArea.appendText(msg + "\n");
-                    }
-                }catch (IOException e){
+                } catch (IOException e) {
                     e.printStackTrace();
-                } finally {
                     disconnect();
                 }
             }).start();
@@ -105,6 +82,52 @@ public class Controller implements Initializable{
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException("Unable to connect to server");
+        }
+    }
+
+    private void handleMessageFromServer(String msg) {
+        Platform.runLater(() -> {
+            try {
+                if (msg.startsWith("/login_ok ")) {
+                    setUsername(msg.split("\\s+")[1]);
+                } else if (msg.startsWith("/login_failed ")) {
+                    String reason = msg.split("\\s+", 2)[1];
+                    msgArea.appendText(reason + "\n");
+                } else if (msg.startsWith("/clients_list ")) {
+                    handleClientsList(msg);
+                } else if (msg.matches("\\[.*\\] .* -> .*: .*")) {
+                    handleChatMessage(msg);
+                } else {
+                    msgArea.appendText(msg + "\n");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
+    private void handleClientsList(String msg) {
+        clientsList.getItems().clear();
+        String[] tokens = msg.split("\\s+");
+        for (int i = 1; i < tokens.length; i++) {
+            clientsList.getItems().add(tokens[i]);
+        }
+    }
+
+    private void handleChatMessage(String msg) {
+
+        String[] parts = msg.split(" ", 5);
+        if (parts.length >= 4) {
+            String type = parts[0].substring(1, parts[0].length() - 1);
+            String sender = parts[1];
+            String receiver = parts[3].substring(0, parts[3].length() - 1);
+            String message = parts[4];
+
+            msgArea.appendText(msg + "\n");
+            if (sender.equals(username)) {
+                ChatLocalHistory.writeMessage(sender, receiver, message, type.equals("PRIVATE"));
+            }
+
         }
     }
 

@@ -54,7 +54,7 @@ public class ClientHandler {
                         executeCmd(msg);
                         continue;
                     }
-                    server.broadcastMessage(username + ": " + msg);
+                    server.broadcastMessage(msg, this);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -91,6 +91,12 @@ public class ClientHandler {
             disconnect();
         }
     }
+
+    public void sendMessage(String msg, String sender, String receiver, boolean isPrivate) {
+        String formattedMessage = String.format("[%s] %s -> %s: %s", isPrivate ? "PRIVATE" : "BROADCAST", sender, receiver, msg);
+        sendMessage(formattedMessage);
+    }
+
 
     public void disconnect() {
         server.unsubscribe(this);

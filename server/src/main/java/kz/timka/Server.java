@@ -29,12 +29,6 @@ public class Server {
         }
     }
 
-    public void broadcastMessage(String msg) throws IOException {
-        for(ClientHandler clientHandler : list) {
-            clientHandler.sendMessage(msg);
-        }
-    }
-
     public void subscribe(ClientHandler clientHandler) {
         list.add(clientHandler);
         sendClientsList();
@@ -54,16 +48,25 @@ public class Server {
         return false;
     }
 
-    public void sendPrivateMsg(ClientHandler sender, String receiver, String msg) throws IOException{
-        for(ClientHandler c : list) {
-            if(c.getUsername().equals(receiver)) {
-                c.sendMessage("From: " + sender.getUsername() + " Message: " + msg);
-                sender.sendMessage("Receiver: " + receiver + " Message: " + msg);
+    public void broadcastMessage(String msg, ClientHandler sender) throws IOException {
+        for (ClientHandler clientHandler : list) {
+            clientHandler.sendMessage(msg, sender.getUsername(), "ALL", false);
+        }
+    }
+
+    public void sendPrivateMsg(ClientHandler sender, String receiver, String msg) {
+        for (ClientHandler c : list) {
+            if (c.getUsername().equals(receiver)) {
+                c.sendMessage(msg, sender.getUsername(), receiver, true);
+                sender.sendMessage(msg, sender.getUsername(), receiver, true);
                 return;
             }
         }
-        sender.sendMessage("Unable to send message to " + receiver);
+        sender.sendMessage("Unable to send message to " + receiver, "Server", sender.getUsername(), true);
     }
+
+
+
 
     public void sendClientsList(){
         StringBuilder builder =  new StringBuilder("/clients_list ");
