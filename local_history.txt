@@ -1,0 +1,5 @@
+[BROADCAST] Alex -> ALL: Hello
+[BROADCAST] Ben -> ALL: Hello
+[PRIVATE] Ben -> Alex: HEllo
+[BROADCAST] John -> ALL: Hi!
+[PRIVATE] John -> Alex: Hello

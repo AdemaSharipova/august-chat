@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+    <Properties>
+        <Property name="serverBasePath">server/logs</Property>
+    </Properties>
+
+    <Appenders>
+
+        <File name="ServerLogs" fileName="${serverBasePath}/serverLogfile.log" append="true">
+            <PatternLayout pattern="%-5p %d{yyyy-MM-dd HH:mm:ss} [%t] %C (%F:%L) - %m%n"/>
+        </File>
+
+        <Console name="STDOUT" target="SYSTEM_OUT">
+            <PatternLayout pattern="%-5p %d{yyyy-MM-dd HH:mm:ss} [%t] %C (%F:%L) - %m%n"/>
+        </Console>
+    </Appenders>
+
+    <Loggers>
+
+        <Logger name="kz.timka.ServerApp" level="error" additivity="false">
+            <AppenderRef ref="ServerLogs"/>
+            <AppenderRef ref="STDOUT"/>
+        </Logger>
+
+        <Root level="trace">
+            <AppenderRef ref="STDOUT"/>
+        </Root>
+    </Loggers>
+</Configuration>
